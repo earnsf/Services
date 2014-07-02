@@ -36,12 +36,10 @@ def get_county(request):
 
 
     check = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.like(city), Zip_database.acceptable_cities.like(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
+    if len(check) == 0:
+        return Response(status_code=300)  # should be blank on the browser because it is a back-end error message
 
-    print("there are " + str(len(check)) + " entries")
-    #if len(check) == 0:
-    #    return Response(status_code=300)  # should be blank on the browser because it is a back-end error message
-    #my_list = [getattr(check[0], column.name) for column in check[0].__table__.columns]
-    #print(my_list)
+
 
     if state == 'DC':               # fips for DC
         return 1100199999
