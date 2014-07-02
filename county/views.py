@@ -11,8 +11,8 @@ from .models import (
     County_fips2010,
     )
 
-county = Service(name='Deriving county', path='/county/{city}/{state}/{zipcode}',description='deriving the county from an address')
-med_income = Service(name='Median income', path='/county/{city}/{state}/{zipcode}/{household_size}', description='Getting the median income')
+county = Service(name='Deriving county', path='/v1/county/{city}/{state}/{zipcode}',description='deriving the county from an address')
+med_income = Service(name='Median income', path='/v1/county/{city}/{state}/{zipcode}/{household_size}', description='Getting the median income')
 
 
 
@@ -35,14 +35,23 @@ def get_county(request):
     zipcode = request.matchdict['zipcode']
 
 
+    check = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.like(city), Zip_database.acceptable_cities.like(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
+
+    print("there are " + str(len(check)) + " entries")
+    #if len(check) == 0:
+    #    return Response(status_code=300)  # should be blank on the browser because it is a back-end error message
+    #my_list = [getattr(check[0], column.name) for column in check[0].__table__.columns]
+    #print(my_list)
+
     if state == 'DC':               # fips for DC
         return 1100199999
 
     elif state == 'GU':             # fips for GU
         return 6601099999
 
-    elif state == 'PR' or state == 'CT' or state == 'ME' or state == 'MA' or state == 'NH' or state == 'RI' or state == 'VT':             # fips for PR (don't really care)
-        #result = DBSession().query(County_fips2010).filter(County_fips2010.State == state, County_fips2010.county_town_name == city + " Municipio").all()
+    # all the other special cases including 43 independent cities
+    elif state == 'PR' or state == 'CT' or state == 'ME' or state == 'MA' or state == 'NH' or state == 'RI' or state == 'VT':
+
         result = DBSession().query(County_fips2010).filter(County_fips2010.State == state, County_fips2010.county_town_name.startswith(city)).all()
         #print(len(result))  == 0
         if len(result) == 1:
@@ -50,14 +59,16 @@ def get_county(request):
             return int(my_list[2])
 
         else:
-            # print some statement or return an error page API (ask Tim)
             return Response(status_code=300)
 
 
     else:
-        result = DBSession().query(Zip_database).filter(Zip_database.state == state, Zip_database.zipcode == zipcode, or_(Zip_database.primary_city == city, Zip_database.acceptable_cities.like(city))).all()
+        result = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.like(city), Zip_database.acceptable_cities.like(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
+        print(len(result))
         if len(result) == 1:
             my_list = [getattr(result[0], column.name) for column in result[0].__table__.columns]
+            print my_list
+            print("hey")
             my_county = my_list[3]
             result1 = DBSession().query(County_fips2010).filter(County_fips2010.State == state, County_fips2010.County_Name.startswith(my_county)).all()
             my_list = [getattr(result1[0], column.name) for column in result1[0].__table__.columns]
@@ -68,34 +79,7 @@ def get_county(request):
             return Response(status_code=300)
 
 
-"""
-    elif state == 'CT' or state == 'ME' or state == 'MA' or state == 'NH' or state == 'RI' or state == 'VT':
-        my_list = []
-        result = DBSession().query(County_fips2010).filter(County_fips2010.State == state, County_fips2010.county_town_name == city + " town").all()
-        if len(result) != 0:
-            my_list = [getattr(result[0], column.name) for column in result[0].__table__.columns]
-            return int(my_list[2])
-        else:
-            result1 = DBSession().query(County_fips2010).filter(County_fips2010.State == state, County_fips2010.county_town_name == city + " city").all()
-            if len(result1) != 0:
-                my_list = [getattr(result1[0], column.name) for column in result1[0].__table__.columns]
-                return int(my_list[2])
-            else:
-                result2 = DBSession().query(County_fips2010).filter(County_fips2010.State == state, County_fips2010.county_town_name == city + " UT").all()
-                if len(result2) != 0:
-                    my_list = [getattr(result2[0], column.name) for column in result2[0].__table__.columns]
-                    return int(my_list[2])
-                else:
-                    result3 = DBSession().query(County_fips2010).filter(County_fips2010.State == state, County_fips2010.county_town_name.like('%'))
 
-"""
-
-
-
-    #result = DBSession().query(Zip_database).first()
-    #for a in result:
-    #    for column in a.__table__.columns:         # 94704 Bekreley / Alameda County CA
-    #        print(getattr(result, column.name))
 
 
 
