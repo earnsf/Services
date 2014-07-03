@@ -12,7 +12,8 @@ from .models import (
     )
 
 county = Service(name='Deriving county', path='/v1/county/{city}/{state}/{zipcode}',description='deriving the county from an address')
-med_income = Service(name='Median income', path='/v1/county/{city}/{state}/{zipcode}/{household_size}', description='Getting the median income')
+med_income = Service(name='Median income', path='/v1/county/{city}/{state}/{zipcode}/median', description='Getting the median income')
+level_income = Service(name='Level income', path='/v1/county/{city}/{state}/{zipcode}/median/{level}', description='Getting the median income for different levels')
 
 
 
@@ -29,7 +30,48 @@ def my_view(request):
 
 
 @county.get()
+def show_county(request):
+
+    return get_county(request)
+
+
+
+@med_income.get()
+def show_med_income(request):
+
+    fips = get_county(request)
+    income = DBSession().query(County_fips2010).filter(County_fips2010.fips2010 == fips).all()
+    my_list = [getattr(income[0], column.name) for column in income[0].__table__.columns]
+    return my_list[4]
+
+
+
+@level_income.get()
+def show_level_income(request):
+
+    fips = get_county(request)
+    level = request.matchdict['level']
+
+    my_dict = ['l50_1','l50_2','l50_3','l50_4','l50_5','l50_6','l50_7','l50_8','l30_1','l30_2','l30_3','l30_4','l30_5',\
+               'l30_6','l30_7','l30_8','l80_1','l80_2','l80_3','l80_4','l80_5','l80_6','l80_7','l80_8',]
+
+    if level not in my_dict:
+        return Response(status_code=300)
+
+    income = DBSession().query(County_fips2010).filter(County_fips2010.fips2010 == fips).all()
+    str_list = list(level)
+    my_list = [getattr(income[0], column.name) for column in income[0].__table__.columns]
+    if int(str_list[1]) == 5:
+        return my_list[int(str_list[4]) + 4]
+    elif  int(str_list[1]) == 3:
+        return my_list[int(str_list[4]) + 12]
+    return my_list[int(str_list[4]) + 20]
+
+
+
+
 def get_county(request):
+
     city = request.matchdict['city']
     state = request.matchdict['state']
     zipcode = request.matchdict['zipcode']
@@ -62,11 +104,9 @@ def get_county(request):
 
     else:
         result = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.like(city), Zip_database.acceptable_cities.like(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
-        print(len(result))
+
         if len(result) == 1:
             my_list = [getattr(result[0], column.name) for column in result[0].__table__.columns]
-            print my_list
-            print("hey")
             my_county = my_list[3]
             result1 = DBSession().query(County_fips2010).filter(County_fips2010.State == state, County_fips2010.County_Name.startswith(my_county)).all()
             my_list = [getattr(result1[0], column.name) for column in result1[0].__table__.columns]
