@@ -56,6 +56,7 @@ def show_level_income(request):
                'l30_6','l30_7','l30_8','l80_1','l80_2','l80_3','l80_4','l80_5','l80_6','l80_7','l80_8',]
 
     if level not in my_dict:
+        print("Invalid income level!")
         return Response(status_code=300)
 
     income = DBSession().query(County_fips2010).filter(County_fips2010.fips2010 == fips).all()
@@ -79,6 +80,7 @@ def get_county(request):
 
     check = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.like(city), Zip_database.acceptable_cities.like(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
     if len(check) == 0:
+        print("Invalid address!")
         return Response(status_code=300)  # should be blank on the browser because it is a back-end error message
 
 
@@ -99,6 +101,7 @@ def get_county(request):
             return int(my_list[2])
 
         else:
+            print("Invalid address!")
             return Response(status_code=300)
 
 
@@ -114,6 +117,7 @@ def get_county(request):
 
         else:
             # print some statement or return an error page API (ask Tim)
+            print("Invalid address!")
             return Response(status_code=300)
 
 
