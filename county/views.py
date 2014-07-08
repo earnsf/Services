@@ -10,11 +10,23 @@ from .models import (
     Zip_database,
     County_fips2010,
     )
+import json
+from collections import OrderedDict
 
-county = Service(name='Deriving county', path='/v1/county/{city}/{state}/{zipcode}',description='deriving the county from an address')
-med_income = Service(name='Median income', path='/v1/county/{city}/{state}/{zipcode}/median', description='Getting the median income')
-level_income = Service(name='Level income', path='/v1/county/{city}/{state}/{zipcode}/median/{level}', description='Getting the median income for different levels')
 
+
+
+county = Service(name='Deriving county', path='/v1/county/{city}/{state}/{zipcode}',\
+                 description='deriving the county from an address')
+
+med_income = Service(name='Median income', path='/v1/county/{city}/{state}/{zipcode}/median', \
+                     description='Getting the median income')
+
+level_income = Service(name='Level income', path='/v1/county/{city}/{state}/{zipcode}/median/{level}', \
+                       description='Getting the median income for different levels')
+
+fifty_income_verify = Service(name='Income verification', path='/v1/county/{city}/{state}/{zipcode}/median/{level}/{income}', \
+                              description='Verifying if the income is below 50% AMI')
 
 
 
@@ -29,44 +41,79 @@ def my_view(request):
     return {'one': one, 'project': 'county'}
 
 
+
 @county.get()
 def show_county(request):
 
-    return get_county(request)
+    city = request.matchdict['city']
+    state = request.matchdict['state']
+    zipcode = request.matchdict['zipcode']
+    fips = get_county(request)
+
+    data = {'city': city.title(), 'state':state.upper(), 'zipcode': int(zipcode), 'fips': fips}
+
+    return json.dumps(OrderedDict(data))
 
 
 
 @med_income.get()
 def show_med_income(request):
-
+    city = request.matchdict['city']
+    state = request.matchdict['state']
+    zipcode = request.matchdict['zipcode']
     fips = get_county(request)
-    income = DBSession().query(County_fips2010).filter(County_fips2010.fips2010 == fips).all()
-    my_list = [getattr(income[0], column.name) for column in income[0].__table__.columns]
-    return my_list[4]
 
+    median_income = get_median_income(request)
+
+    data = {'city': city.title(), 'state':state.upper(), 'zipcode': int(zipcode), 'fips': fips, 'median_income': median_income}
+    return json.dumps(OrderedDict(data))
 
 
 @level_income.get()
 def show_level_income(request):
-
+    # print("butt")
+    city = request.matchdict['city']
+    state = request.matchdict['state']
+    zipcode = request.matchdict['zipcode']
     fips = get_county(request)
     level = request.matchdict['level']
+    median_income = get_median_income(request)
+    income_threshold = get_income_threshold(request)
 
-    my_dict = ['l50_1','l50_2','l50_3','l50_4','l50_5','l50_6','l50_7','l50_8','l30_1','l30_2','l30_3','l30_4','l30_5',\
-               'l30_6','l30_7','l30_8','l80_1','l80_2','l80_3','l80_4','l80_5','l80_6','l80_7','l80_8',]
+    data = {'city': city.title(), 'state':state.upper(), 'zipcode': int(zipcode), 'fips': fips, 'median_income': median_income, \
+            level: income_threshold}
 
-    if level not in my_dict:
-        print("Invalid income level!")
-        return Response(status_code=300)
+    return json.dumps(OrderedDict(data))
 
-    income = DBSession().query(County_fips2010).filter(County_fips2010.fips2010 == fips).all()
+
+@fifty_income_verify.get()
+def show_eligibility(request):
+    city = request.matchdict['city']
+    state = request.matchdict['state']
+    zipcode = request.matchdict['zipcode']
+    level = request.matchdict['level']
     str_list = list(level)
-    my_list = [getattr(income[0], column.name) for column in income[0].__table__.columns]
-    if int(str_list[1]) == 5:
-        return my_list[int(str_list[4]) + 4]
-    elif  int(str_list[1]) == 3:
-        return my_list[int(str_list[4]) + 12]
-    return my_list[int(str_list[4]) + 20]
+    if str_list[1] != '5':
+        print("The income threshold has to be 50% area median income!")
+        return Response(status_code=300)
+    income = request.matchdict['income']
+    fips = get_county(request)
+    median_income = get_median_income(request)
+    income_threshold = get_income_threshold(request)
+    eligibility = verify_income(request)
+    data = {'city': city.title(), 'state':state.upper(), 'zipcode': int(zipcode), 'fips': fips, 'median_income': median_income, \
+            level: income_threshold, 'income': int(income), 'eligibility': eligibility}
+    return json.dumps(OrderedDict(data))
+
+
+def verify_income(request):
+    income_threshold = get_income_threshold(request)
+    income = request.matchdict['income']
+    level = request.matchdict['level']
+
+    if int(income) <= int(income_threshold):
+        return True
+    return False
 
 
 
@@ -84,22 +131,23 @@ def get_county(request):
         return Response(status_code=300)  # should be blank on the browser because it is a back-end error message
 
 
-
     if state == 'DC':               # fips for DC
+        # return 1100199999
         return 1100199999
 
     elif state == 'GU':             # fips for GU
+        # return 6601099999
         return 6601099999
 
     # all the other special cases including 43 independent cities
     elif state == 'PR' or state == 'CT' or state == 'ME' or state == 'MA' or state == 'NH' or state == 'RI' or state == 'VT':
 
-        result = DBSession().query(County_fips2010).filter(County_fips2010.State == state, County_fips2010.county_town_name.startswith(city)).all()
+        result = DBSession().query(County_fips2010).filter(County_fips2010.state == state, County_fips2010.county_town_name.startswith(city)).all()
         #print(len(result))  == 0
         if len(result) == 1:
             my_list = [getattr(result[0], column.name) for column in result[0].__table__.columns]
-            return int(my_list[2])
 
+            return int(my_list[2])
         else:
             print("Invalid address!")
             return Response(status_code=300)
@@ -111,9 +159,10 @@ def get_county(request):
         if len(result) == 1:
             my_list = [getattr(result[0], column.name) for column in result[0].__table__.columns]
             my_county = my_list[3]
-            result1 = DBSession().query(County_fips2010).filter(County_fips2010.State == state, County_fips2010.County_Name.startswith(my_county)).all()
+            result1 = DBSession().query(County_fips2010).filter(County_fips2010.state == state, County_fips2010.county.startswith(my_county)).all()
             my_list = [getattr(result1[0], column.name) for column in result1[0].__table__.columns]
             return int(my_list[2])
+
 
         else:
             # print some statement or return an error page API (ask Tim)
@@ -122,6 +171,44 @@ def get_county(request):
 
 
 
+def get_median_income(request):
+
+    fips = get_county(request)
+    income = DBSession().query(County_fips2010).filter(County_fips2010.fips2010 == fips).all()
+    my_list = [getattr(income[0], column.name) for column in income[0].__table__.columns]
+    return my_list[4]
+
+
+
+
+def get_income_threshold(request):
+
+    fips = get_county(request)
+    # print('fips: ' + str(fips))
+
+    city = request.matchdict['city']
+    state = request.matchdict['state']
+    zipcode = request.matchdict['zipcode']
+    level = request.matchdict['level']
+
+
+
+    my_dict = ['l50_1','l50_2','l50_3','l50_4','l50_5','l50_6','l50_7','l50_8','l30_1','l30_2','l30_3','l30_4','l30_5',\
+               'l30_6','l30_7','l30_8','l80_1','l80_2','l80_3','l80_4','l80_5','l80_6','l80_7','l80_8',]
+
+    if level not in my_dict:
+        print("Invalid income level!")
+        return Response(status_code=300)
+
+    income = DBSession().query(County_fips2010).filter(County_fips2010.fips2010 == fips).all()
+
+    str_list = list(level)
+    my_list = [getattr(income[0], column.name) for column in income[0].__table__.columns]
+    if int(str_list[1]) == 5:
+        return my_list[int(str_list[4]) + 4]
+    elif  int(str_list[1]) == 3:
+        return my_list[int(str_list[4]) + 12]
+    return my_list[int(str_list[4]) + 20]
 
 
 
