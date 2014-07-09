@@ -50,7 +50,7 @@ def show_county(request):
     city = request.matchdict['city']
     state = request.matchdict['state']
     zipcode = request.matchdict['zipcode']
-    if type(fips) != int:
+    if type(fips) != int and type(fips) != long:
         return fips
 
     data = {"city": city.title(), "state":state.upper(), "zipcode": int(zipcode), "fips": fips}
@@ -65,10 +65,11 @@ def show_med_income(request):
     zipcode = request.matchdict['zipcode']
     fips = get_county(request)
     median_income = get_median_income(request)
-    if type(median_income) != int:
+    if type(median_income) != int and type(median_income) != long:
+
         return median_income
     data = {'city': city.title(), 'state':state.upper(), 'zipcode': int(zipcode), 'fips': fips, 'median_income': median_income}
-    return (json.dumps(OrderedDict(data))).replace('\\"', "\"")
+    return json.dumps(OrderedDict(data))
 
 
 @level_income.get()
@@ -81,13 +82,13 @@ def show_level_income(request):
     level = request.matchdict['level']
     median_income = get_median_income(request)
     income_threshold = get_income_threshold(request)
-    if type(income_threshold) != int:
+    if type(income_threshold) != int and type(income_threshold) != long:
         return income_threshold
 
     data = {'city': city.title(), 'state':state.upper(), 'zipcode': int(zipcode), 'fips': fips, 'median_income': median_income, \
             level: income_threshold}
 
-    return (json.dumps(OrderedDict(data))).replace('\\"', "\"")
+    return json.dumps(OrderedDict(data))
 
 
 @fifty_income_verify.get()
@@ -116,12 +117,14 @@ def verify_income(request):
     income_threshold = get_income_threshold(request)
     income = request.matchdict['income']
     level = request.matchdict['level']
-    if type(income) != int:
-        print("Income has to be a numerical value!")
+    try:
+        if (int(income) <= int(income_threshold)):
+            return True
+        return False
+
+    except ValueError as e:
+        print e
         return Response(status_code=300)
-    if int(income) <= int(income_threshold):
-        return True
-    return False
 
 
 
@@ -182,7 +185,7 @@ def get_county(request):
 def get_median_income(request):
 
     fips = get_county(request)
-    if type(fips) != int:
+    if type(fips) != int and type(fips) != long:
         return fips
     income = DBSession().query(County_fips2010).filter(County_fips2010.fips2010 == fips).all()
     my_list = [getattr(income[0], column.name) for column in income[0].__table__.columns]
@@ -194,7 +197,7 @@ def get_median_income(request):
 def get_income_threshold(request):
 
     fips = get_county(request)
-    if type(fips) != int:
+    if type(fips) != int and type(fips) != long:
         return fips
 
     city = request.matchdict['city']
