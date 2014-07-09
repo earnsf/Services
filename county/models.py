@@ -26,9 +26,9 @@ class MyModel(Base):
 
 Index('my_index', MyModel.name, unique=True, mysql_length=255)
 
-class County_fips2010(DeferredReflection, Base):
+class County_fips2010(DeferredReflection,Base):
     __tablename__ = 'county_fips2010'
 
-class Zip_database(DeferredReflection, Base):
+class Zip_database(DeferredReflection,Base):
     __tablename__ = 'zip_database'
 
