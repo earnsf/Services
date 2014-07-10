@@ -125,14 +125,16 @@ def verify_income(request):
 
     return income <= income_threshold
 
+
 def get_zipcode(request):
     city = request.matchdict['city']
     state = request.matchdict['state']
     zipcode = request.matchdict['zipcode']
+    check = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.contains(city), Zip_database.acceptable_cities.contains(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
 
-    check = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.like(city), Zip_database.acceptable_cities.like(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
     if len(check) == 0:
         print("Invalid address!")
+        print(check)
         return Response(status_code=300)
     else:
         my_list = [getattr(check[0], column.name) for column in check[0].__table__.columns]
@@ -143,16 +145,17 @@ def get_zipcode(request):
 
     return str(my_list[0])
 
+
 def get_county(request):
 
     city = request.matchdict['city']
     state = request.matchdict['state']
     zipcode = request.matchdict['zipcode']
 
+    check = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.contains(city), Zip_database.acceptable_cities.contains(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
 
-    check = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.like(city), Zip_database.acceptable_cities.like(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
     if len(check) == 0:
-        print("Invalid address!")
+        print("hey Invalid address!")
         return Response(status_code=300)  # should be blank on the browser because it is a back-end error message
 
 
@@ -175,15 +178,17 @@ def get_county(request):
                 return str(0) + str(my_list[2])
             return str(my_list[2])
         else:
-            print("Invalid address!")
+            print("wusup Invalid address!")
             return Response(status_code=300)
 
 
     else:
-        result = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.like(city), Zip_database.acceptable_cities.like(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
+        result = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.contains(city), Zip_database.acceptable_cities.contains(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
 
         if len(result) == 1:
             my_list = [getattr(result[0], column.name) for column in result[0].__table__.columns]
+            # print(my_list[1])
+            # print(type(my_list[1]))
             my_county = my_list[3]
             result1 = DBSession().query(County_fips2010).filter(County_fips2010.state == state, County_fips2010.county.startswith(my_county)).all()
             my_list = [getattr(result1[0], column.name) for column in result1[0].__table__.columns]
@@ -194,7 +199,7 @@ def get_county(request):
 
         else:
             # print some statement or return an error page API (ask Tim)
-            print("Invalid address!")
+            print("YO Invalid address!")
             return Response(status_code=300)
 
 

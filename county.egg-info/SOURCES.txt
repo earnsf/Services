@@ -7,9 +7,7 @@ development.ini
 production.ini
 setup.py
 county/__init__.py
-county/amazon_ses.py
 county/models.py
-county/notification.py
 county/tests.py
 county/views.py
 county.egg-info/PKG-INFO
