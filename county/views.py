@@ -155,7 +155,7 @@ def get_county(request):
     check = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.contains(city), Zip_database.acceptable_cities.contains(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
 
     if len(check) == 0:
-        print("hey Invalid address!")
+        print("Invalid address!")
         return Response(status_code=300)  # should be blank on the browser because it is a back-end error message
 
 
@@ -178,7 +178,7 @@ def get_county(request):
                 return str(0) + str(my_list[2])
             return str(my_list[2])
         else:
-            print("wusup Invalid address!")
+            print("Invalid address!")
             return Response(status_code=300)
 
 
@@ -199,7 +199,7 @@ def get_county(request):
 
         else:
             # print some statement or return an error page API (ask Tim)
-            print("YO Invalid address!")
+            print("Invalid address!")
             return Response(status_code=300)
 
 
