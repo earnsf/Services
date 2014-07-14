@@ -152,6 +152,7 @@ def get_county(request):
     state = request.matchdict['state']
     zipcode = request.matchdict['zipcode']
 
+
     check = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.contains(city), Zip_database.acceptable_cities.contains(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
 
     if len(check) == 0:
@@ -159,19 +160,20 @@ def get_county(request):
         return Response(status_code=300)  # should be blank on the browser because it is a back-end error message
 
 
-    if state == 'DC':               # fips for DC
+    if str(state).upper() == 'DC':               # fips for DC
         # return 1100199999
         return '1100199999'
 
-    elif state == 'GU':             # fips for GU
+    elif str(state).upper() == 'GU':             # fips for GU
         # return 6601099999
         return '6601099999'
 
     # all the other special cases including 43 independent cities
-    elif state == 'PR' or state == 'CT' or state == 'ME' or state == 'MA' or state == 'NH' or state == 'RI' or state == 'VT':
+
+    elif str(state).upper() == 'PR' or str(state).upper() == 'CT' or str(state).upper() == 'ME' or str(state).upper() == 'MA' or str(state).upper() == 'NH' or str(state).upper() == 'RI' or str(state).upper() == 'VT':
 
         result = DBSession().query(County_fips2010).filter(County_fips2010.state == state, County_fips2010.county_town_name.startswith(city)).all()
-        #print(len(result))  == 0
+        # print("length of the result is " + str(len(result)))
         if len(result) == 1:
             my_list = [getattr(result[0], column.name) for column in result[0].__table__.columns]
             if len(str(my_list[2])) == 9:
@@ -195,6 +197,7 @@ def get_county(request):
             if len(str(my_list[2])) == 9:
                 return str(0) + str(my_list[2])
             return str(my_list[2])
+
 
 
         else:
