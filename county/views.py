@@ -53,8 +53,8 @@ def show_county(request):
     if type(fips) != str:
         return fips
 
-    data = {"city": city.title(), "state":state.upper(), "zipcode": zipcode, "fips": fips}
-    return json.dumps(OrderedDict(data))
+    data = [("city", city.title()), ("state", state.upper()), ("zipcode", zipcode), ("fips", fips)]
+    return json.dumps(OrderedDict(data1))
 
 
 
@@ -68,7 +68,8 @@ def show_med_income(request):
     if type(median_income) != int and type(median_income) != long:
 
         return median_income
-    data = {'city': city.title(), 'state':state.upper(), 'zipcode': zipcode, 'fips': fips, 'median_income': median_income}
+    data = [('city', city.title()), ('state', state.upper()), ('zipcode', zipcode), ('fips', fips), \
+            ('median_income', median_income)]
     return json.dumps(OrderedDict(data))
 
 
@@ -85,8 +86,8 @@ def show_level_income(request):
     if type(income_threshold) != int and type(income_threshold) != long:
         return income_threshold
 
-    data = {'city': city.title(), 'state':state.upper(), 'zipcode': zipcode, 'fips': fips, 'median_income': median_income, \
-            level: income_threshold}
+    data = [('city', city.title()), ('state', state.upper()), ('zipcode', zipcode), ('fips', fips), \
+            ('median_income', median_income), (level, income_threshold)]
 
     return json.dumps(OrderedDict(data))
 
@@ -99,7 +100,7 @@ def show_eligibility(request):
     level = request.matchdict['level']
     str_list = list(level)
     if str_list[1] != '5':
-        print("The income threshold has to be 50% area median income!")
+        print("***** The income threshold has to be 50% area median income! *****")
         return Response(status_code=300)
     income = request.matchdict['income']
     fips = get_county(request)
@@ -108,9 +109,9 @@ def show_eligibility(request):
     eligibility = verify_income(request)
     if type(eligibility) != bool:
         return eligibility
-    data = {'city': city.title(), 'state':state.upper(), 'zipcode': zipcode, 'fips': fips, 'median_income': median_income, \
-            level: income_threshold, 'income': int(income), 'eligibility': eligibility}
-    return (json.dumps(OrderedDict(data))).replace('\\"', "\"")
+    data = [('city', city.title()), ('state', state.upper()), ('zipcode', zipcode), ('fips', fips), \
+            ('median_income', median_income), (level, income_threshold), ('income', int(income)), ('eligibility', eligibility)]
+    return json.dumps(OrderedDict(data))
 
 
 def verify_income(request):
@@ -133,7 +134,7 @@ def get_zipcode(request):
     check = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.contains(city), Zip_database.acceptable_cities.contains(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
 
     if len(check) == 0:
-        print("Invalid address!")
+        print("***** Invalid address! *****")
         print(check)
         return Response(status_code=300)
     else:
@@ -152,38 +153,59 @@ def get_county(request):
     state = request.matchdict['state']
     zipcode = request.matchdict['zipcode']
 
-
+    state_upper = str(state).upper()
     check = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.contains(city), Zip_database.acceptable_cities.contains(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
 
     if len(check) == 0:
-        print("Invalid address!")
+        print("***** Invalid address! *****")
+
         return Response(status_code=300)  # should be blank on the browser because it is a back-end error message
 
 
-    if str(state).upper() == 'DC':               # fips for DC
+    if state_upper == 'DC':               # fips for DC
         # return 1100199999
         return '1100199999'
 
-    elif str(state).upper() == 'GU':             # fips for GU
+    elif state_upper == 'GU':             # fips for GU
         # return 6601099999
         return '6601099999'
 
     # all the other special cases including 43 independent cities
 
-    elif str(state).upper() == 'PR' or str(state).upper() == 'CT' or str(state).upper() == 'ME' or str(state).upper() == 'MA' or str(state).upper() == 'NH' or str(state).upper() == 'RI' or str(state).upper() == 'VT':
+    elif state_upper == 'PR' or state_upper == 'CT' or state_upper == 'ME' or state_upper == 'MA' or state_upper == 'NH' or state_upper == 'RI' or state_upper == 'VT':
 
-        result = DBSession().query(County_fips2010).filter(County_fips2010.state == state, County_fips2010.county_town_name.startswith(city)).all()
-        # print("length of the result is " + str(len(result)))
-        if len(result) == 1:
-            my_list = [getattr(result[0], column.name) for column in result[0].__table__.columns]
-            if len(str(my_list[2])) == 9:
-                return str(0) + str(my_list[2])
-            return str(my_list[2])
-        else:
-            print("Invalid address!")
-            return Response(status_code=300)
+        my_zip = DBSession().query(Zip_database).filter(Zip_database.zipcode == zipcode).all()
+
+        if get_special_fips(city, state, zipcode) != 0:
+            return get_special_fips(city, state, zipcode)
 
 
+        else:               # Ex. East Concord are part of Concord City, so truncate the name
+            word_list = str(city).split()
+            if len(word_list) > 1:
+                new_city = " ".join(word_list[1:])
+                if get_special_fips(new_city, state, zipcode) != 0:
+                    return get_special_fips(new_city, state, zipcode)
+
+
+                else:          # Cities are part of acceptable cities and the fips cannot be found, so we use the primary city to look up the fips.
+                    print("***** The city inputted are not in the database for now. Sorry for the inconvenience! *****")
+                    return Response(status_code=300)
+
+
+            else:
+                my_list2 = [getattr(my_zip[0], column.name) for column in my_zip[0].__table__.columns]
+                if str(city) in str(my_list2[2]):
+                    primary_city = my_list2[1]
+                    if get_special_fips(primary_city,state,zipcode) != 0:
+                        return get_special_fips(primary_city, state, zipcode)
+                    else:
+                        print("***** The city inputted are not in the database for now. Sorry for the inconvenience! *****")
+                        return Response(status_code=300)
+                else:
+                    print("***** The city inputted are not in the database for now. Sorry for the inconvenience! *****")
+                    return Response(status_code=300)
+    # normal case
     else:
         result = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.contains(city), Zip_database.acceptable_cities.contains(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
 
@@ -202,9 +224,32 @@ def get_county(request):
 
         else:
             # print some statement or return an error page API (ask Tim)
-            print("Invalid address!")
+            print("***** Invalid address! *****")
             return Response(status_code=300)
 
+def get_special_fips(city, state, zipcode):
+    result_town = DBSession().query(County_fips2010).filter(County_fips2010.state == state, County_fips2010.county_town_name == city + " town").all()
+    if (len(result_town)) == 1:
+        my_list_town = [getattr(result_town[0], column.name) for column in result_town[0].__table__.columns]
+        if len(str(my_list_town[2])) == 9:
+            return str(0) + str(my_list_town[2])
+        return str(my_list_town[2])
+    else:
+        result_city = DBSession().query(County_fips2010).filter(County_fips2010.state == state, County_fips2010.county_town_name == city + " city").all()
+        if (len(result_city)) == 1:
+            my_list_city = [getattr(result_city[0], column.name) for column in result_city[0].__table__.columns]
+            if len(str(my_list_city[2])) == 9:
+                return str(0) + str(my_list_city[2])
+            return str(my_list_city[2])
+        else:
+            result_startwith = DBSession().query(County_fips2010).filter(County_fips2010.state == state, County_fips2010.county_town_name.startswith(city)).all()
+            if (len(result_startwith)) == 1:
+                my_list_start = [getattr(result_startwith[0], column.name) for column in result_startwith[0].__table__.columns]
+                if len(str(my_list_start[2])) == 9:
+                    return str(0) + str(my_list_start[2])
+                return str(my_list_start[2])
+            else:
+                return 0
 
 
 def get_median_income(request):
