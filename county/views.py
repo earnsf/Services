@@ -121,9 +121,11 @@ def verify_income(request):
         level = request.matchdict['level']
 
     except ValueError:
-        print ("***** Only integers are acceptable for income slot! *****")
+        print("***** Only integers are acceptable for income slot! *****")
         return Response(status_code=300)
-
+    if income < 0:
+        print("***** Income has to be a positive integer! *****")
+        return Response(status_code=300)
     return income <= income_threshold
 
 
