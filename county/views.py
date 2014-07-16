@@ -279,7 +279,7 @@ def get_income_threshold(request):
                'l30_6','l30_7','l30_8','l80_1','l80_2','l80_3','l80_4','l80_5','l80_6','l80_7','l80_8',]
 
     if level not in my_dict:
-        print("Invalid income level!")
+        print("***** Invalid income level! *****")
         return Response(status_code=300)
 
     income = DBSession().query(County_fips2010).filter(County_fips2010.fips2010 == fips).all()
