@@ -54,7 +54,7 @@ def show_county(request):
         return fips
 
     data = [("city", city.title()), ("state", state.upper()), ("zipcode", zipcode), ("fips", fips)]
-    return json.dumps(OrderedDict(data1))
+    return json.dumps(OrderedDict(data))
 
 
 
@@ -120,8 +120,8 @@ def verify_income(request):
         income = int(request.matchdict['income'])
         level = request.matchdict['level']
 
-    except ValueError as e:
-        print e
+    except ValueError:
+        print ("***** Only integers are acceptable for income slot! *****")
         return Response(status_code=300)
 
     return income <= income_threshold
