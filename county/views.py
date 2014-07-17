@@ -123,6 +123,8 @@ def verify_income(request):
     except ValueError:
         print("***** Only integers are acceptable for income slot! *****")
         return Response(status_code=300)
+    except TypeError:
+        return Response(status_code=300)
     if income < 0:
         print("***** Income has to be a positive integer! *****")
         return Response(status_code=300)
