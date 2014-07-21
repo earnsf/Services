@@ -139,7 +139,6 @@ def get_zipcode(request):
 
     if len(check) == 0:
         print("***** Invalid address! *****")
-        print(check)
         return Response(status_code=300)
     else:
         my_list = [getattr(check[0], column.name) for column in check[0].__table__.columns]
@@ -165,13 +164,12 @@ def get_county(request):
 
         return Response(status_code=300)  # should be blank on the browser because it is a back-end error message
 
-
     if state_upper == 'DC':               # fips for DC
-        # return 1100199999
+
         return '1100199999'
 
     elif state_upper == 'GU':             # fips for GU
-        # return 6601099999
+
         return '6601099999'
 
     # all the other special cases including 43 independent cities
@@ -213,13 +211,23 @@ def get_county(request):
     else:
         result = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.contains(city), Zip_database.acceptable_cities.contains(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
 
+
         if len(result) == 1:
             my_list = [getattr(result[0], column.name) for column in result[0].__table__.columns]
             # print(my_list[1])
             # print(type(my_list[1]))
             my_county = my_list[3]
-            result1 = DBSession().query(County_fips2010).filter(County_fips2010.state == state, County_fips2010.county.startswith(my_county)).all()
+            if my_county[:3] == 'St ':
+                my_county2 = my_county[:2] + '.' + my_county[2:]
+                result1 = DBSession().query(County_fips2010).filter(or_(County_fips2010.county.startswith(my_county), County_fips2010.county.startswith(my_county2)), County_fips2010.state == state).all()
+
+            elif my_county[:4] == 'Ste ':
+                my_county2 = my_county[:3] + '.' + my_county[3:]
+                result1 = DBSession().query(County_fips2010).filter(or_(County_fips2010.county.startswith(my_county), County_fips2010.county.startswith(my_county2)), County_fips2010.state == state).all()
+            else:
+                result1 = DBSession().query(County_fips2010).filter(County_fips2010.state == state, County_fips2010.county.startswith(my_county)).all()
             my_list = [getattr(result1[0], column.name) for column in result1[0].__table__.columns]
+
             if len(str(my_list[2])) == 9:
                 return str(0) + str(my_list[2])
             return str(my_list[2])
