@@ -101,7 +101,7 @@ def show_eligibility(request):
     str_list = list(level)
     if str_list[1] != '5':
         print("***** The income threshold has to be 50% area median income! *****")
-        return Response(status_code=300)
+        return Response(status_code=300, body="***** The income threshold has to be 50% area median income! *****")
     income = request.matchdict['income']
     fips = get_county(request)
     median_income = get_median_income(request)
@@ -122,12 +122,12 @@ def verify_income(request):
 
     except ValueError:
         print("***** Only integers are acceptable for income slot! *****")
-        return Response(status_code=300)
+        return Response(status_code=300, body="***** Only integers are acceptable for income slot! *****")
     except TypeError:
-        return Response(status_code=300)
+        return Response(status_code=300, body="***** Only integers are acceptable for income slot! *****")
     if income < 0:
         print("***** Income has to be a positive integer! *****")
-        return Response(status_code=300)
+        return Response(status_code=300, body="***** Income has to be a positive integer! *****")
     return income <= income_threshold
 
 
@@ -139,7 +139,7 @@ def get_zipcode(request):
 
     if len(check) == 0:
         print("***** Invalid address! *****")
-        return Response(status_code=300)
+        return Response(status_code=300, body="***** Invalid address! *****")
     else:
         my_list = [getattr(check[0], column.name) for column in check[0].__table__.columns]
         if len(str(my_list[0])) == 3:
@@ -162,7 +162,7 @@ def get_county(request):
     if len(check) == 0:
         print("***** Invalid address! *****")
 
-        return Response(status_code=300)  # should be blank on the browser because it is a back-end error message
+        return Response(status_code=300, body="***** Invalid address! *****")  # should be blank on the browser because it is a back-end error message
 
     if state_upper == 'DC':               # fips for DC
 
@@ -192,7 +192,7 @@ def get_county(request):
 
                 else:          # Cities are part of acceptable cities and the fips cannot be found, so we use the primary city to look up the fips.
                     print("***** The city inputted are not in the database for now. Sorry for the inconvenience! *****")
-                    return Response(status_code=300)
+                    return Response(status_code=300, body="***** The city inputted are not in the database for now. Sorry for the inconvenience! *****")
 
 
             else:
@@ -203,10 +203,10 @@ def get_county(request):
                         return get_special_fips(primary_city, state, zipcode)
                     else:
                         print("***** The city inputted are not in the database for now. Sorry for the inconvenience! *****")
-                        return Response(status_code=300)
+                        return Response(status_code=300, body="***** The city inputted are not in the database for now. Sorry for the inconvenience! *****")
                 else:
                     print("***** The city inputted are not in the database for now. Sorry for the inconvenience! *****")
-                    return Response(status_code=300)
+                    return Response(status_code=300, body="***** The city inputted are not in the database for now. Sorry for the inconvenience! *****")
     # normal case
     else:
         result = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.contains(city), Zip_database.acceptable_cities.contains(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
@@ -237,7 +237,7 @@ def get_county(request):
         else:
             # print some statement or return an error page API (ask Tim)
             print("***** Invalid address! *****")
-            return Response(status_code=300)
+            return Response(status_code=300, body="***** Invalid address! *****")
 
 def get_special_fips(city, state, zipcode):
     result_town = DBSession().query(County_fips2010).filter(County_fips2010.state == state, County_fips2010.county_town_name == city + " town").all()
@@ -292,7 +292,7 @@ def get_income_threshold(request):
 
     if level not in my_dict:
         print("***** Invalid income level! *****")
-        return Response(status_code=300)
+        return Response(status_code=300, body="***** Invalid income level! *****")
 
     income = DBSession().query(County_fips2010).filter(County_fips2010.fips2010 == fips).all()
 
