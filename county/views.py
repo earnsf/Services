@@ -51,7 +51,7 @@ def show_county(request):
     state = request.matchdict['state']
     zipcode = get_zipcode(request)
     if type(fips) != str:
-        return fips
+        return fips.body
 
     data = [("city", city.title()), ("state", state.upper()), ("zipcode", zipcode), ("fips", fips)]
     return json.dumps(OrderedDict(data))
@@ -67,7 +67,7 @@ def show_med_income(request):
     median_income = get_median_income(request)
     if type(median_income) != int and type(median_income) != long:
 
-        return median_income
+        return median_income.body
     data = [('city', city.title()), ('state', state.upper()), ('zipcode', zipcode), ('fips', fips), \
             ('median_income', median_income)]
     return json.dumps(OrderedDict(data))
@@ -84,7 +84,7 @@ def show_level_income(request):
     median_income = get_median_income(request)
     income_threshold = get_income_threshold(request)
     if type(income_threshold) != int and type(income_threshold) != long:
-        return income_threshold
+        return income_threshold.body
 
     data = [('city', city.title()), ('state', state.upper()), ('zipcode', zipcode), ('fips', fips), \
             ('median_income', median_income), (level, income_threshold)]
@@ -101,14 +101,16 @@ def show_eligibility(request):
     str_list = list(level)
     if str_list[1] != '5':
         print("***** The income threshold has to be 50% area median income! *****")
-        return Response(status_code=300, body="***** The income threshold has to be 50% area median income! *****")
+        #return Response(status_code=300, body="***** The income threshold has to be 50% area median income! *****")
+        return "***** The income threshold has to be 50% area median income! *****"
+
     income = request.matchdict['income']
     fips = get_county(request)
     median_income = get_median_income(request)
     income_threshold = get_income_threshold(request)
     eligibility = verify_income(request)
     if type(eligibility) != bool:
-        return eligibility
+        return eligibility.body
     data = [('city', city.title()), ('state', state.upper()), ('zipcode', zipcode), ('fips', fips), \
             ('median_income', median_income), (level, income_threshold), ('income', int(income)), ('eligibility', eligibility)]
     return json.dumps(OrderedDict(data))
@@ -237,6 +239,7 @@ def get_county(request):
         else:
             # print some statement or return an error page API (ask Tim)
             print("***** Invalid address! *****")
+            # return Response(status_code=300, body="***** Invalid address! *****")
             return Response(status_code=300, body="***** Invalid address! *****")
 
 def get_special_fips(city, state, zipcode):
@@ -292,6 +295,7 @@ def get_income_threshold(request):
 
     if level not in my_dict:
         print("***** Invalid income level! *****")
+        # return Response(status_code=300, body="***** Invalid income level! *****")
         return Response(status_code=300, body="***** Invalid income level! *****")
 
     income = DBSession().query(County_fips2010).filter(County_fips2010.fips2010 == fips).all()
