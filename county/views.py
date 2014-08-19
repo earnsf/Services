@@ -98,11 +98,6 @@ def show_eligibility(request):
     state = request.matchdict['state']
     zipcode = get_zipcode(request)
     level = request.matchdict['level']
-    str_list = list(level)
-    if str_list[1] != '5':
-        print("***** The income threshold has to be 50% area median income! *****")
-        #return Response(status_code=300, body="***** The income threshold has to be 50% area median income! *****")
-        return "***** The income threshold has to be 50% area median income! *****"
 
     income = request.matchdict['income']
     fips = get_county(request)
@@ -117,16 +112,24 @@ def show_eligibility(request):
 
 
 def verify_income(request):
+    level = request.matchdict['level']
     try:
         income_threshold = int(get_income_threshold(request))
-        income = int(request.matchdict['income'])
-        level = request.matchdict['level']
+
+        try:
+            income = int(request.matchdict['income'])
+        except ValueError:
+            print "***** Only integers are acceptable for income slot! *****"
+            return Response(status_code=300, body="***** Only integers are acceptable for income slot! *****")
+        except TypeError:
+            return Response(status_code=300, body="***** Only integers are acceptable for income slot! *****")
 
     except ValueError:
-        print("***** Only integers are acceptable for income slot! *****")
-        return Response(status_code=300, body="***** Only integers are acceptable for income slot! *****")
+        print get_income_threshold(request).body
+        return get_income_threshold(request)
     except TypeError:
-        return Response(status_code=300, body="***** Only integers are acceptable for income slot! *****")
+        return get_income_threshold(request)
+
     if income < 0:
         print("***** Income has to be a positive integer! *****")
         return Response(status_code=300, body="***** Income has to be a positive integer! *****")
@@ -297,6 +300,11 @@ def get_income_threshold(request):
         print("***** Invalid income level! *****")
         # return Response(status_code=300, body="***** Invalid income level! *****")
         return Response(status_code=300, body="***** Invalid income level! *****")
+    elif level[1] != '5':
+        print("***** Only 50% area median income cutoff is required! *****")
+        #return Response(status_code=300, body="***** The income threshold has to be 50% area median income! *****")
+        return Response(status_code=300, body="***** Only 50% area median income cutoff is required! *****")
+
 
     income = DBSession().query(County_fips2010).filter(County_fips2010.fips2010 == fips).all()
 
