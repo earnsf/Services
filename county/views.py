@@ -26,8 +26,8 @@ med_income = Service(name='Median income', path='/v1/county/{city}/{state}/{zipc
 level_income = Service(name='Level income', path='/v1/county/{city}/{state}/{zipcode}/median/{level}', \
                        description='Getting the median income for different levels')
 
-fifty_income_verify = Service(name='Income verification', path='/v1/county/{city}/{state}/{zipcode}/median/{level}/{income}', \
-                              description='Verifying if the income is below 50% AMI')
+income_verify = Service(name='Income verification', path='/v1/county/{city}/{state}/{zipcode}/median/{level}/{income}', \
+                              description='Verifying if the income is eligible for the program')
 
 
 
@@ -92,7 +92,7 @@ def show_level_income(request):
     return json.dumps(OrderedDict(data))
 
 
-@fifty_income_verify.get()
+@income_verify.get()
 def show_eligibility(request):
     city = request.matchdict['city']
     state = request.matchdict['state']
@@ -294,23 +294,26 @@ def get_income_threshold(request):
 
 
     my_dict = ['l50_1','l50_2','l50_3','l50_4','l50_5','l50_6','l50_7','l50_8','l30_1','l30_2','l30_3','l30_4','l30_5',\
-               'l30_6','l30_7','l30_8','l80_1','l80_2','l80_3','l80_4','l80_5','l80_6','l80_7','l80_8',]
+               'l30_6','l30_7','l30_8','l80_1','l80_2','l80_3','l80_4','l80_5','l80_6','l80_7','l80_8','l100_1','l100_2',\
+               'l100_3','l100_4','l100_5','l100_6','l100_7','l100_8']
 
     if level not in my_dict:
         print("***** Invalid income level! *****")
         # return Response(status_code=300, body="***** Invalid income level! *****")
         return Response(status_code=300, body="***** Invalid income level! *****")
-    elif level[1] != '5':
-        print("***** Only 50% area median income cutoff is required! *****")
-        #return Response(status_code=300, body="***** The income threshold has to be 50% area median income! *****")
-        return Response(status_code=300, body="***** Only 50% area median income cutoff is required! *****")
+    # elif level[1] != '5':
+    #     print("***** Only 50% area median income cutoff is required! *****")
+    #     #return Response(status_code=300, body="***** The income threshold has to be 50% area median income! *****")
+    #     return Response(status_code=300, body="***** Only 50% area median income cutoff is required! *****")
 
 
     income = DBSession().query(County_fips2010).filter(County_fips2010.fips2010 == fips).all()
 
     str_list = list(level)
     my_list = [getattr(income[0], column.name) for column in income[0].__table__.columns]
-    if int(str_list[1]) == 5:
+    if len(str_list) == 6:
+        return mylist[int(str_list[5]) + 28]
+    elif int(str_list[1]) == 5:
         return my_list[int(str_list[4]) + 4]
     elif  int(str_list[1]) == 3:
         return my_list[int(str_list[4]) + 12]
