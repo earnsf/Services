@@ -140,7 +140,7 @@ def get_zipcode(request):
     city = request.matchdict['city']
     state = request.matchdict['state']
     zipcode = request.matchdict['zipcode']
-    check = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.contains(city), Zip_database.acceptable_cities.contains(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
+    check = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.__eq__(city), Zip_database.acceptable_cities.__eq__(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
 
     if len(check) == 0:
         print("***** Invalid address! *****")
@@ -162,7 +162,7 @@ def get_county(request):
     zipcode = request.matchdict['zipcode']
 
     state_upper = str(state).upper()
-    check = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.contains(city), Zip_database.acceptable_cities.contains(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
+    check = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.__eq__(city), Zip_database.acceptable_cities.__eq__(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
 
     if len(check) == 0:
         print("***** Invalid address! *****")
@@ -214,7 +214,7 @@ def get_county(request):
                     return Response(status_code=300, body="***** The city inputted are not in the database for now. Sorry for the inconvenience! *****")
     # normal case
     else:
-        result = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.contains(city), Zip_database.acceptable_cities.contains(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
+        result = DBSession().query(Zip_database).filter(or_(Zip_database.primary_city.__eq__(city), Zip_database.acceptable_cities.__eq__(city))).filter(Zip_database.state == state, Zip_database.zipcode == zipcode).all()
 
 
         if len(result) == 1:
