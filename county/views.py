@@ -301,7 +301,7 @@ def get_income_threshold(request):
         print("***** Invalid income level! *****")
         # return Response(status_code=300, body="***** Invalid income level! *****")
         return Response(status_code=300, body="***** Invalid income level! *****")
-    elif level[1] == '5' or  level[1] == '1':
+    elif level[1] == '5' or  level[1] == '1' or level[1] == '8':
        
         income = DBSession().query(County_fips2010).filter(County_fips2010.fips2010 == fips).all()
 
@@ -317,9 +317,9 @@ def get_income_threshold(request):
 	    return my_list[int(str_list[5]) + 28]
         return my_list[int(str_list[4]) + 20]
     else:
-	print("***** Only 50% or 100% area median income cutoff is required! *****")
+	print("***** Only 50%, 80% or 100% area median income cutoff is required! *****")
         #return Response(status_code=300, body="***** The income threshold has to be 50% area median income! *****")
-        return Response(status_code=300, body="***** Only 50% or 100% area median income cutoff is required! *****")
+        return Response(status_code=300, body="***** Only 50%, 80% or 100% area median income cutoff is required! *****")
 
 
 
