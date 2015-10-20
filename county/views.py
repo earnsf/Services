@@ -29,6 +29,9 @@ level_income = Service(name='Level income', path='/v1/county/{city}/{state}/{zip
 income_verify = Service(name='Income verification', path='/v1/county/{city}/{state}/{zipcode}/median/{level}/{income}', \
                               description='Verifying if the income is eligible for the program')
 
+all_level_income = Service(name='All Level income', path='/v1/county/{city}/{state}/{zipcode}/median/{level}/all', \
+                       description='Getting the median income for different levels')
+
 
 
 # the original interface that presents when setting up the pyramid scaffold
@@ -287,11 +290,7 @@ def get_income_threshold(request):
     fips = get_county(request)
     if type(fips) != str:
         return fips
-
-
     level = request.matchdict['level']
-
-
 
     my_dict = ['l50_1','l50_2','l50_3','l50_4','l50_5','l50_6','l50_7','l50_8','l30_1','l30_2','l30_3','l30_4','l30_5',\
                'l30_6','l30_7','l30_8','l80_1','l80_2','l80_3','l80_4','l80_5','l80_6','l80_7','l80_8',\
@@ -301,7 +300,8 @@ def get_income_threshold(request):
         print("***** Invalid income level! *****")
         # return Response(status_code=300, body="***** Invalid income level! *****")
         return Response(status_code=300, body="***** Invalid income level! *****")
-    elif level[1] == '5' or  level[1] == '1' or level[1] == '8':
+    elif level[1] == '5' or  level[1] == '1' or level[1] == '8' or\
+ 	level[1] == '3':
        
         income = DBSession().query(County_fips2010).filter(County_fips2010.fips2010 == fips).all()
 
@@ -317,10 +317,33 @@ def get_income_threshold(request):
 	    return my_list[int(str_list[5]) + 28]
         return my_list[int(str_list[4]) + 20]
     else:
-	print("***** Only 50%, 80% or 100% area median income cutoff is required! *****")
+	print("***** Only 30%, 50%, 80% or 100% area median income cutoff is required! *****")
         #return Response(status_code=300, body="***** The income threshold has to be 50% area median income! *****")
-        return Response(status_code=300, body="***** Only 50%, 80% or 100% area median income cutoff is required! *****")
+        return Response(status_code=300, body="***** Only 30%, 50%, 80% or 100% area median income cutoff is required! *****")
 
+@all_level_income.get()
+def get_all_level_income(request):
+    """
+    Service to return allowed income level for all 1 to 8 household sizes
+    for a given city, state and zipcode
+    e.g. http://lmi.earn.org:6543/v1/county/chicago/IL/60645/median/l50/all
+    """
+    city = request.matchdict['city']
+    state = request.matchdict['state']
+    zipcode = get_zipcode(request)
+    fips = get_county(request)
+    req_level = request.matchdict['level']
+    data = []
+
+    for i in xrange(1,9):
+	request.matchdict['level']=req_level+"_"+str(i)
+	level = "l"+str(i)
+    	income_threshold = get_income_threshold(request)
+    	if type(income_threshold) != int and type(income_threshold) != long:
+            return income_threshold.body
+	data.append((level, income_threshold))
+
+    return json.dumps(OrderedDict(data))
 
 
 
