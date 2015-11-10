@@ -21,10 +21,10 @@ Source code  https://github.com/earnsf/Services
 
 Test URI
 
-http://lmi.earn.org:6543/v1/county/Chicago/IL/60645/median/l50_3
-http://lmi.earn.org:6543/v1/county/San%20Francisco/CA/94104/median
-http://lmi.earn.org:6543/v1/county/San%20Francisco/CA/94104/median/l50_1
-http://lmi.earn.org:6543/v1/county/San%20Francisco/CA/94104/median/l100_1
+http://lmi.earn.org/v1/county/Chicago/IL/60645/median/l50_3
+http://lmi.earn.org/v1/county/San%20Francisco/CA/94104/median
+http://lmi.earn.org/v1/county/San%20Francisco/CA/94104/median/l50_1
+http://lmi.earn.org/v1/county/San%20Francisco/CA/94104/median/l100_1
 
 2015 Data Format
 
